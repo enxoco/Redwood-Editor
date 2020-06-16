@@ -16,6 +16,7 @@
 const Route = use('Route')
 
 Route.get('/api/list', 'ConfigEditController.listConfigDirectories')
+Route.get('/api/redwood/status', 'ConfigEditController.checkRedwoodStatus')
 Route.get('/api/list/:category/', 'ConfigEditController.listFiles')
 Route.get('/api/config/:category/:file', 'ConfigEditController.listConfig')
 Route.post('/api/config/:category/:file', 'ConfigEditController.postConfig')

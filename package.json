@@ -27,6 +27,7 @@
     "bootstrap-vue": "^2.0.0",
     "cross-env": "^5.2.0",
     "nuxt": "^2.0.0",
+    "request": "^2.88.2",
     "vue-select": "^3.10.3",
     "vuex-map-fields": "^1.4.0"
   },

@@ -3,7 +3,7 @@
     <div>
       <img src="/undraw_add_file2_gvbb.svg" height="200px" />
       <h1 class="title">Redwood Config editor</h1>
-
+      <Status />
       <DirectoryList />
 
 
@@ -14,14 +14,18 @@
 <script>
 import Logo from "~/components/Logo.vue";
 import DirectoryList from "~/components/DirectoryList.vue";
+import Status from "~/components/Status.vue"
+const axios = require("axios").default;
 
 export default {
   components: {
     Logo,
-    DirectoryList
+    DirectoryList,
+    Status
   },
   data() {
     return {
+      redwoodStatus: null
     };
   },
   props: ['info'],
