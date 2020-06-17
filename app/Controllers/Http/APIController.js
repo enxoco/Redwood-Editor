@@ -1,30 +1,51 @@
 'use strict'
 var fs = require('fs')
-const configDir = '/etc/redwood/categories/'
 const axios = require('axios')
 const CancelToken = axios.CancelToken
-const Helpers = use('Helpers')
-const Config = use('Config')
-const configPath = Helpers.configPath()
-// const redwoodConfig = Helpers.configPath('redwood.js')
+const Redis = use('Redis')
+
 
 class ConfigEditorController {
   
   async setupStatus({ request, response }) {
-    console.log(Config.get('redwood'))
-   if (typeof Config.get('redwood.address') != undefined && typeof Config.get('redwood.categories') != undefined) {
-     return {status: true}
-   } else {
-     return {status: false}
-   }
+    var server = await Redis.get('redwood.server.address')
+    var categories = await Redis.get('redwood.server.categories')
+    if (server && categories) {
+      // Check to make sure we can connect to Redwood and retrieve a pac file
+      try {
+        var redwoodStatus = this.axiosGetStatusCode(`http://${server}/proxy.pac`).then(data => {
+          if  (data === 200) {
+            if (fs.existsSync(`${categories}`)) {
+              return {status: true}
+              return true
+            } else {
+              return {status: false, error: `We were able to verify that Redwood is serving a PAC file but we were unable to verify that your categories exist at ${categories}.  Please check your settings and ensure that the user running this server has permission to access that directory`}
+            }
+          } else {//
+            if (fs.existsSync(`${categories}`)) {
+              return {status: false, error: `We were able to verify your categories exists but we were unable to verify that Redwood is serving a PAC file at http://${server}/proxy.pac.  Please check your settings and try again.`}
+            } else {
+              return {status: false, error: `Unable to verify that Redwood is serving PAC files at http://${server}/proxy.pac and unable to verify that ${categories} actually exists.  Please check your settings and try again.`}
+            }
+            return {status: false, error: 'Unable to connect to Redwood.  Please check your settings and try again'}
+          }
+        })
+      } catch(e) {
+        return {error: e}
+      }
+      return await redwoodStatus
+
+    } else {
+      return {status: false}
+    }
   }
 
   async saveConfig({ request, response }) {
     const { serverAddress, categoryDirectory } = request.all()
-    Config.set('redwood.address', serverAddress)
-    Config.set('redwood.categories', categoryDirectory)
+    await Redis.set('redwood.server.address', serverAddress)
+    await Redis.set('redwood.server.categories', categoryDirectory)
 
-    return response.send({updated: Config.get('redwood.address')})
+    return response.send({updated: true})
   }
 
   async axiosGetStatusCode(url) {
@@ -44,25 +65,33 @@ class ConfigEditorController {
     });
   }
   async checkRedwoodStatus({ request, response }) {
-    var resData = this.axiosGetStatusCode('http://10.10.30.12:6520/proxy.pac').then(data => {
+    var server = await Redis.get('redwood.server.address')
+    var categories = await Redis.get('redwood.server.categories')
+    var resData = this.axiosGetStatusCode(`http://${server}/proxy.pac`).then(data => {
       return data
     })
     return response.send({ status: await resData })
   }
 
   async listConfigDirectories({ request, response }) {
-    var dir = fs.readdirSync('/etc/redwood/categories')
+    var server = await Redis.get('redwood.server.address')
+    var categories = await Redis.get('redwood.server.categories')
+    var dir = fs.readdirSync(`${categories}`)
     return dir
   }
   async listFiles({ request, response, params }) {
-    var files = fs.readdirSync(`/etc/redwood/categories/${params.category}`)
+    var server = await Redis.get('redwood.server.address')
+    var categories = await Redis.get('redwood.server.categories')
+    var files = fs.readdirSync(`${categories}/${params.category}`)
     return files
   }
 
   async listConfig({ request, response, params, view }) {
+    var server = await Redis.get('redwood.server.address')
+    var categories = await Redis.get('redwood.server.categories')
     try {
 
-      let data = fs.readFileSync(`${configDir}${params.category}/${params.file}`, 'utf8')
+      let data = fs.readFileSync(`${categories}/${params.category}/${params.file}`, 'utf8')
       data = data.split('\n')
       var sites = []
       data.map(d => sites.push({ value: d }))
@@ -74,6 +103,8 @@ class ConfigEditorController {
     }
   }
   async postConfig({ request, response, params }) {
+    var server = await Redis.get('redwood.server.address')
+    var categories = await Redis.get('redwood.server.categories')
     var req = request.all()
     let sites = req.sites
 
@@ -95,7 +126,7 @@ class ConfigEditorController {
 
     sites.sort(compare);
     sites.unshift(defaultWeight)
-    const updateStream = fs.createWriteStream(`${configDir}${params.category}/${params.file}`)
+    const updateStream = fs.createWriteStream(`${categories}/${params.category}/${params.file}`)
     sites.map(site => updateStream.write(site.value + '\n'))
     return sites
   }
