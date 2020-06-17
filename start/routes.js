@@ -15,9 +15,11 @@
 
 const Route = use('Route')
 
-Route.get('/api/list', 'ConfigEditController.listConfigDirectories')
-Route.get('/api/redwood/status', 'ConfigEditController.checkRedwoodStatus')
-Route.get('/api/list/:category/', 'ConfigEditController.listFiles')
-Route.get('/api/config/:category/:file', 'ConfigEditController.listConfig')
-Route.post('/api/config/:category/:file', 'ConfigEditController.postConfig')
+Route.get('/api/list', 'APIController.listConfigDirectories')
+Route.get('/api/redwood/status', 'APIController.checkRedwoodStatus')
+Route.get('/api/redwood/setup/', 'APIController.setupStatus')
+Route.post('/api/redwood/setup', 'APIController.saveConfig')
+Route.get('/api/list/:category/', 'APIController.listFiles')
+Route.get('/api/config/:category/:file', 'APIController.listConfig')
+Route.post('/api/config/:category/:file', 'APIController.postConfig')
 Route.any('*', 'NuxtController.render')

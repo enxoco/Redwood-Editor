@@ -2,10 +2,30 @@
 var fs = require('fs')
 const configDir = '/etc/redwood/categories/'
 const axios = require('axios')
-const CancelToken = axios.CancelToken;
-
+const CancelToken = axios.CancelToken
+const Helpers = use('Helpers')
+const Config = use('Config')
+const configPath = Helpers.configPath()
+// const redwoodConfig = Helpers.configPath('redwood.js')
 
 class ConfigEditorController {
+  
+  async setupStatus({ request, response }) {
+    console.log(Config.get('redwood'))
+   if (typeof Config.get('redwood.address') != undefined && typeof Config.get('redwood.categories') != undefined) {
+     return {status: true}
+   } else {
+     return {status: false}
+   }
+  }
+
+  async saveConfig({ request, response }) {
+    const { serverAddress, categoryDirectory } = request.all()
+    Config.set('redwood.address', serverAddress)
+    Config.set('redwood.categories', categoryDirectory)
+
+    return response.send({updated: Config.get('redwood.address')})
+  }
 
   async axiosGetStatusCode(url) {
     let source = CancelToken.source();
